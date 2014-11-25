@@ -12,6 +12,8 @@
 class Jetpack_Likes {
 	var $version = '20141028';
 
+	private $scripts_enqueued = false;
+
 	public static function init() {
 		static $instance = NULL;
 
@@ -563,8 +565,6 @@ class Jetpack_Likes {
 			add_filter( 'the_content', array( &$this, 'post_likes' ), 30, 1 );
 			add_filter( 'the_excerpt', array( &$this, 'post_likes' ), 30, 1 );
 
-			add_action( 'wp_enqueue_scripts', array( &$this, 'enqueue_scripts' ) );
-
 		} else {
 			add_filter( 'post_flair', array( &$this, 'post_likes' ), 30, 1 );
 			add_filter( 'post_flair_block_css', array( $this, 'post_flair_service_enabled_like' ) );
@@ -587,13 +587,11 @@ class Jetpack_Likes {
 	* Enqueue scripts
 	*/
 	function enqueue_scripts() {
-		if ( $this->is_likes_visible() ) {
-			wp_enqueue_script( 'postmessage', plugins_url( '_inc/postmessage.js', dirname(__FILE__) ), array( 'jquery' ), JETPACK__VERSION, false );
-			wp_enqueue_script( 'jquery_inview', plugins_url( '_inc/jquery.inview.js', dirname(__FILE__) ), array( 'jquery' ), JETPACK__VERSION, false );
-			wp_enqueue_script( 'jetpack_resize', plugins_url( '_inc/jquery.jetpack-resize.js' , dirname(__FILE__) ), array( 'jquery' ), JETPACK__VERSION, false );
-			wp_enqueue_style( 'jetpack_likes', plugins_url( 'likes/style.css', __FILE__ ), array(), JETPACK__VERSION );
-			wp_enqueue_script( 'jetpack_likes_queuehandler', plugins_url( 'likes/queuehandler.js' , __FILE__ ), array( 'jquery' ), JETPACK__VERSION, true );
-		}
+		wp_enqueue_script( 'postmessage', plugins_url( '_inc/postmessage.js', dirname(__FILE__) ), array( 'jquery' ), JETPACK__VERSION, false );
+		wp_enqueue_script( 'jquery_inview', plugins_url( '_inc/jquery.inview.js', dirname(__FILE__) ), array( 'jquery' ), JETPACK__VERSION, false );
+		wp_enqueue_script( 'jetpack_resize', plugins_url( '_inc/jquery.jetpack-resize.js' , dirname(__FILE__) ), array( 'jquery' ), JETPACK__VERSION, false );
+		wp_enqueue_style( 'jetpack_likes', plugins_url( 'likes/style.css', __FILE__ ), array(), JETPACK__VERSION );
+		wp_enqueue_script( 'jetpack_likes_queuehandler', plugins_url( 'likes/queuehandler.js' , __FILE__ ), array( 'jquery' ), JETPACK__VERSION, true );
 	}
 
 	/**
@@ -695,6 +693,12 @@ class Jetpack_Likes {
 			$url = home_url();
 			$url_parts = parse_url( $url );
 			$domain = $url_parts['host'];
+		}
+
+		// Client side scripts need to be included in Jetpack mode only once
+		if ( ! $this->scripts_enqueued && $this->in_jetpack ) {
+			$this->scripts_enqueued = true;
+			$this->enqueue_scripts();
 		}
 
 		add_filter( 'wp_footer', array( $this, 'likes_master' ) );
