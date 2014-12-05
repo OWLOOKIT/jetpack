@@ -12,8 +12,6 @@
 class Jetpack_Likes {
 	var $version = '20141028';
 
-	private $scripts_enqueued = false;
-
 	public static function init() {
 		static $instance = NULL;
 
@@ -75,6 +73,8 @@ class Jetpack_Likes {
 
 		add_action( 'admin_bar_menu', array( $this, 'admin_bar_likes' ), 60 );
 
+		add_action( 'wp_enqueue_scripts', array( $this, 'load_styles_regsiter_scripts' ) );
+
 		add_action( 'save_post', array( $this, 'meta_box_save' ) );
 		add_action( 'edit_attachment', array( $this, 'meta_box_save' ) );
 		add_action( 'sharing_global_options', array( $this, 'admin_settings_init' ), 20 );
@@ -106,6 +106,17 @@ class Jetpack_Likes {
 	function load_jp_css() {
 		// Do we really need `admin_styles`? With the new admin UI, it's breaking some bits.
 		// Jetpack::init()->admin_styles();
+	}
+	/**
+	 * Load style on the front end.
+	 * @return null
+	 */
+	function load_styles_regsiter_scripts() {
+
+		wp_enqueue_style( 'jetpack_likes', plugins_url( 'likes/style.css', __FILE__ ), array(), JETPACK__VERSION );
+		if( $this->in_jetpack ) {
+			$this->register_scripts();
+		}
 	}
 
 	/**
@@ -584,14 +595,14 @@ class Jetpack_Likes {
 	}
 
 	/**
-	* Enqueue scripts
+	* Register scripts
 	*/
-	function enqueue_scripts() {
-		wp_enqueue_script( 'postmessage', plugins_url( '_inc/postmessage.js', dirname(__FILE__) ), array( 'jquery' ), JETPACK__VERSION, false );
-		wp_enqueue_script( 'jquery_inview', plugins_url( '_inc/jquery.inview.js', dirname(__FILE__) ), array( 'jquery' ), JETPACK__VERSION, false );
-		wp_enqueue_script( 'jetpack_resize', plugins_url( '_inc/jquery.jetpack-resize.js' , dirname(__FILE__) ), array( 'jquery' ), JETPACK__VERSION, false );
-		wp_enqueue_style( 'jetpack_likes', plugins_url( 'likes/style.css', __FILE__ ), array(), JETPACK__VERSION );
-		wp_enqueue_script( 'jetpack_likes_queuehandler', plugins_url( 'likes/queuehandler.js' , __FILE__ ), array( 'jquery' ), JETPACK__VERSION, true );
+	function register_scripts() {
+		// Lets register all the sciprts
+		wp_register_script( 'postmessage', plugins_url( '_inc/postmessage.js', dirname(__FILE__) ), array( 'jquery' ), JETPACK__VERSION, false );
+		wp_register_script( 'jquery_inview', plugins_url( '_inc/jquery.inview.js', dirname(__FILE__) ), array( 'jquery' ), JETPACK__VERSION, false );
+		wp_register_script( 'jetpack_resize', plugins_url( '_inc/jquery.jetpack-resize.js' , dirname(__FILE__) ), array( 'jquery' ), JETPACK__VERSION, false );
+		wp_register_script( 'jetpack_likes_queuehandler', plugins_url( 'likes/queuehandler.js' , __FILE__ ), array( 'jquery', 'postmessage', 'jetpack_resize', 'jquery_inview' ), JETPACK__VERSION, true );
 	}
 
 	/**
@@ -695,12 +706,6 @@ class Jetpack_Likes {
 			$domain = $url_parts['host'];
 		}
 
-		// Client side scripts need to be included in Jetpack mode only once
-		if ( ! $this->scripts_enqueued && $this->in_jetpack ) {
-			$this->scripts_enqueued = true;
-			$this->enqueue_scripts();
-		}
-
 		add_filter( 'wp_footer', array( $this, 'likes_master' ) );
 
 		/**
@@ -717,6 +722,9 @@ class Jetpack_Likes {
 		$html .= "<div class='likes-widget-placeholder post-likes-widget-placeholder' style='height:55px'><span class='button'><span>" . esc_html__( 'Like', 'jetpack' ) . '</span></span> <span class="loading">' . esc_html__( 'Loading...', 'jetpack' ) . '</span></div>';
 		$html .= "<span class='sd-text-color'></span><a class='sd-link-color'></a>";
 		$html .= '</div>';
+
+		// Lets make sure that the script is enqued
+		wp_enqueue_script( 'jetpack_likes_queuehandler' );
 
 		return $content . $html;
 	}
@@ -909,7 +917,7 @@ class Jetpack_Likes {
 				$enabled = false;
 			}
 		}
-		
+
 		if( is_object( $post ) ) {
 			// Check that the post is a public, published post.
 			if ( 'attachment' == $post->post_type ) {
