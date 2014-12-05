@@ -705,8 +705,8 @@ class Jetpack_Likes {
 			$url_parts = parse_url( $url );
 			$domain = $url_parts['host'];
 		}
-
-		add_filter( 'wp_footer', array( $this, 'likes_master' ) );
+		// make sure to include the scripts before the iframe otherwise weird things happen
+		add_action( 'wp_footer', array( $this, 'likes_master' ), 21 );
 
 		/**
 		* if the same post appears more then once on a page the page goes crazy
@@ -750,8 +750,8 @@ class Jetpack_Likes {
 			$url_parts = parse_url( $url );
 			$domain = $url_parts['host'];
 		}
-
-		add_filter( 'wp_footer', array( $this, 'likes_master' ) );
+		// make sure to include the scripts before the iframe otherwise weird things happen
+		add_action( 'wp_footer', array( $this, 'likes_master' ), 21 );
 
 		$src = sprintf( '%1$s://widgets.wp.com/likes/#blog_id=%2$d&amp;comment_id=%3$d&amp;origin=%1$s://%4$s', $protocol, $blog_id, $comment->comment_ID, $domain );
 		$name = sprintf( 'like-comment-frame-%1$d-%2$d', $blog_id, $comment->comment_ID );
@@ -789,8 +789,8 @@ class Jetpack_Likes {
 			$url_parts = parse_url( $url );
 			$domain = $url_parts['host'];
 		}
-
-		add_filter( 'wp_footer', array( $this, 'likes_master' ) );
+		// make sure to include the scripts before the iframe otherwise weird things happen
+		add_action( 'wp_footer', array( $this, 'likes_master' ), 21 );
 
 		$src = sprintf( '%1$s://widgets.wp.com/likes/#blog_id=%2$d&amp;post_id=%3$d&amp;origin=%1$s://%4$s', $protocol, $blog_id, $post->ID, $domain );
 
@@ -806,6 +806,10 @@ class Jetpack_Likes {
 		$wp_admin_bar->add_node( $node );
 	}
 
+	/**
+	 * This function needs to get loaded after the scripts get added to the page.
+	 *
+	 */
 	function likes_master() {
 		$protocol = 'http';
 		if ( is_ssl() )
@@ -821,10 +825,10 @@ class Jetpack_Likes {
 		}
 
 		$likersText = wp_kses( __( '<span>%d</span> bloggers like this:', 'jetpack' ), array( 'span' => array() ) );
-?>
+		?>
 		<iframe src='<?php echo $src; ?>' scrolling='no' id='likes-master' name='likes-master' style='display:none;'></iframe>
 		<div id='likes-other-gravatars'><div class="likes-text"><?php echo $likersText; ?></div><ul class="wpl-avatars sd-like-gravatars"></ul></div>
-<?php
+		<?php
 	}
 
 	/**
